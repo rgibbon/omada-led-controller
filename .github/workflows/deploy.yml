@@ -1,0 +1,25 @@
+name: Deploy Omada LED Controller
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.HYDRA_SSH_KEY }}
+
+      - name: Rsync to hydra
+        run: |
+          echo "✅ Starting rsync to hydra"
+          rsync -avz --delete -e "ssh -F ~/.ssh/config" ./ hydra:/home/ryan/omada-led-controller
+          echo "✅ Rsync done"
