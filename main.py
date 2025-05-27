@@ -1,3 +1,5 @@
+from datetime import datetime
+from enum import Enum
 from sys import exit
 from os import path
 import requests
@@ -52,44 +54,50 @@ def is_LED_enabled(accessToken: str) -> bool:
         "Content-Type": "application/json",
         "Authorization": f"AccessToken={accessToken}"
     }
-
     response = requests.get(url, headers=headers, verify=False)
-
     response_dict = json.loads(response.text)
     statusCode = response.status_code
     errorCode = response_dict.get("errorCode")
     message = response_dict.get('msg')
     result = response_dict.get('result')
-
     if statusCode == 200 and errorCode == 0:
-        enabled = result.get('enable')
-        logging.info("LED status: [ ON ]") if enabled else logging.info('LED status: [ OFF ]')
-        return enabled
-    logging.info(f'Success: StatusCode: {statusCode} | Message: {message}\n')
+        return result.get('enable')
+    logging.error(message)
     exit(0)
 
 
 def ToggleLEDs():
     accessToken = GetCredentials()
     enabled = is_LED_enabled(accessToken)
+
+    hour = datetime.now().hour
+    expected_enabled = True if hour >= config.ENABLE_TIME and hour < config.DISABLE_TIME else False
+
+    # LEDs ON | HR >= ENABLE_TIME and < DISABLE_TIME
+    if enabled and expected_enabled or not enabled and not expected_enabled:
+        logging.info(f'No changes needed')
+        exit(0)
+
+    STATE = {
+        True: "ON",
+        False: "OFF"
+    }
+
+    logging.info(f'LEDs are {STATE[enabled]}. Should be {STATE[not enabled]}. Changing...')
     
     url = f"{config.BASE_URL}/openapi/v1/{config.OMADA_ID}/sites/{config.SITE_ID}/led"
-
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"AccessToken={accessToken}"
     }
-
-    data = {"enable": not enabled}   
-    logging.info(f'Turning LEDS off...') if enabled else logging.info('Turning LEDs on...')   
-
+    data = {"enable": not enabled} 
     response = requests.put(url, headers=headers, json=data, verify=False)
 
     response_dict = json.loads(response.text)
     errorCode = response_dict.get("errorCode")
     message = response_dict.get('msg')
     
-    logging.info(f'{message}\n')
+    logging.info(f'{message}')
 
 
 ToggleLEDs()

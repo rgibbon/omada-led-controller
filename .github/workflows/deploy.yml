@@ -21,5 +21,5 @@ jobs:
       - name: Rsync to hydra
         run: |
           echo "✅ Starting rsync to hydra"
-          rsync -avz --delete -e "ssh -F /home/ryan/.ssh/config" ./ athena:/home/ryan/omada-led-controller
+          rsync -avz --delete --exclude=".venv" --exclude="__pycache__" -e "ssh -F /home/ryan/.ssh/config" ./ athena:/home/ryan/omada-led-controller
           echo "✅ Rsync done"
